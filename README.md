@@ -20,8 +20,11 @@ Build a map-based application, which lets the user see geo-based data on a map a
 
 Fill in (either in English, or in Slovak):
 
-**Application description**: `<fill in>`
+**Application description**: Aplikácia bude schopná nájsť v zadanom okolí a vzdialenosti všetky prírodné, vodné plochy s možnosťou filtrovania podľa: kvality vody, možnosti kúpania, možnosti lovenia rýb a dostupnosti reštaurácii alebo rekreačných služieb (vodné bicykle, ubytovanie, ...). 
 
-**Data source**: `<fill in>`
+**Data source**: 
+- [Open Street Maps](https://www.openstreetmap.org/)
+- [European Environment Agency: Waterbase - Lakes](https://www.eea.europa.eu/data-and-maps/data/waterbase-lakes-10)
 
-**Technologies used**: `<fill in>`
+**Technologies used**: PostGIS, NodeJS, Angular (JavaScript)
+
