@@ -1,0 +1,100 @@
+<div class="app">
+
+  <div class="content">
+      <div class="menu">
+
+        <h4>Vyhľadávanie vo vzdialenosti: {{ mapRadius / 1000 }} km</h4>
+        <div class="field inline">
+          <span class="shrink">1 km</span>
+          <span>
+              <mat-slider class="full-width" min="1" max="20" step="1" value="1" (change)="onRadiusChange($event)"></mat-slider>
+          </span>
+          <span class="shrink">20 km</span>
+        </div>
+
+        <hr>
+
+        <h4>Filter:</h4>
+        <div class="field">
+          <mat-checkbox value="sports" (change)="onOptionSelect($event)">Vodné športy</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="fishing" (change)="onOptionSelect($event)">Rybolov</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="quality" (change)="onOptionSelect($event)">Kvalitná voda</mat-checkbox>
+        </div>
+        
+        <hr>
+
+        <h4>Vybavenie:</h4>
+        <div class="field">
+          <mat-checkbox value="bar" (change)="onFeatureSelect($event)">Bar</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="cafe" (change)="onFeatureSelect($event)">Kaviareň</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="hotel" (change)="onFeatureSelect($event)">Hotel</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="kids_area" (change)="onFeatureSelect($event)">Detský kútik</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="nightclub" (change)="onFeatureSelect($event)">Nočný klub</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="fast_food" (change)="onFeatureSelect($event)">Fast Food</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="pub" (change)="onFeatureSelect($event)">Pub</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="parking" (change)="onFeatureSelect($event)">Parkovisko</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="restaurant" (change)="onFeatureSelect($event)">Reštaurácia</mat-checkbox>
+        </div>
+        
+        <br>
+        <b>Maximalna vzdialenosť: {{ mapFeatureRadius / 1000 }} km</b>
+        <div class="field inline">
+          <span class="shrink">0.5 km</span>
+          <span>
+              <mat-slider class="full-width" min="0.5" max="5" step="1" value="0.5" (change)="onFeatureRadiusChange($event)"></mat-slider>
+          </span>
+          <span class="shrink">5 km</span>
+        </div>
+
+        <hr>
+
+        <div class="field">
+          <mat-checkbox value="Temperature" (change)="onSubstanceSelect($event)">Zobraziť teplotu vody</mat-checkbox>
+          <mat-checkbox value="density" (change)="onDensitySelect($event)">Zobraziť hustotu vondých plôch</mat-checkbox>
+        </div>
+
+        <hr>
+
+        <h4>Chemické látky:</h4>
+        <div class="field">
+          <mat-checkbox value="Ca" (change)="onSubstanceSelect($event)">Ca</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="K" (change)="onSubstanceSelect($event)">K</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="Mg" (change)="onSubstanceSelect($event)">Mg</mat-checkbox>
+        </div>
+        <div class="field">
+          <mat-checkbox value="Na" (change)="onSubstanceSelect($event)">Na</mat-checkbox>
+        </div>
+  
+      </div>
+      <div class="map">
+
+        <app-map [radius]="mapRadius" [filter]="filter" [features]="features" [featuresRadius]="mapFeatureRadius" [substances]="substances" [showDensity]="showDensity"></app-map>
+
+      </div>
+  </div>
+ 
+</div>

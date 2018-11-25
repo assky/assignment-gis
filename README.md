@@ -20,7 +20,10 @@ Build a map-based application, which lets the user see geo-based data on a map a
 
 Fill in (either in English, or in Slovak):
 
-**Application description**: Aplikácia bude schopná nájsť v zadanom okolí a vzdialenosti všetky prírodné, vodné plochy s možnosťou filtrovania podľa: kvality vody, možnosti kúpania, možnosti lovenia rýb a dostupnosti reštaurácii alebo rekreačných služieb (vodné bicykle, ubytovanie, ...). 
+**Application description**: Aplikácia bude schopná"
+- nájsť v zadanom okolí a vzdialenosti všetky prírodné, vodné plochy s možnosťou filtrovania podľa: kvality vody, možnosti kúpania, možnosti lovenia rýb
+- nájsť dostupnostné reštaurácie alebo rekreačné služby v okolí (vodné bicykle, ubytovanie, ...)
+- s využitím hitmapy vizaulizovať výskyt niektorých chemických zložiek
 
 **Data source**: 
 - [Open Street Maps](https://www.openstreetmap.org/)
