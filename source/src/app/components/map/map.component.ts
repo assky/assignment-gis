@@ -17,7 +17,8 @@ export class MapComponent implements OnInit, OnChanges, AfterViewInit {
   @Input('featuresRadius') featuresRadius: number = 500;
   @Input('substances') substances: any[];
   @Input('showDensity') showDensity: boolean = false;
-
+  @Input('showParkingsByDensity') showParkingsByDensity: boolean = false;
+  
   private MAP: any;
   private mapMarker: any;
   private mapRadius: any;
@@ -26,6 +27,7 @@ export class MapComponent implements OnInit, OnChanges, AfterViewInit {
   private mapHeatmapLayer: any;
   private mapTemperatureLayer: any;
   private mapDensityLayer: any;
+  private mapParkingsByDensityLayer: any;
 
   private zoom: number;
   private position: any;
@@ -50,6 +52,7 @@ export class MapComponent implements OnInit, OnChanges, AfterViewInit {
 
     this.mapMarkerLayer = [];
     this.mapTemperatureLayer = [];
+    this.mapParkingsByDensityLayer = [];
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -67,6 +70,9 @@ export class MapComponent implements OnInit, OnChanges, AfterViewInit {
 
     if (changes.showDensity)
       this.reloadLakesDensity();
+
+    if (changes.showParkingsByDensity)
+      this.reloadParkingsByDensity();
   }
 
   ngAfterViewInit() {
@@ -126,6 +132,16 @@ export class MapComponent implements OnInit, OnChanges, AfterViewInit {
     this.mapService.getLakesDensity().subscribe((res) => {
       if (res.success)
         this.renderLakesDensity(res.data);
+    });
+  }
+
+  private reloadParkingsByDensity() {
+    if (!this.showParkingsByDensity)
+      return this.renderParkingsByDensity([]);
+
+    this.mapService.getFeaturesByWaterDensity().subscribe((res) => {
+      if (res.success)
+        this.renderParkingsByDensity(res.data);
     });
   }
 
@@ -211,11 +227,27 @@ export class MapComponent implements OnInit, OnChanges, AfterViewInit {
     for (let i = 0; i < data.length; i++) {
       let lake = data[i];
       let coordinates = lake.geo.coordinates;
-
-      heatData.push([coordinates[1], coordinates[0], lake.area * lake.area]);
+    
+      heatData.push([coordinates[1], coordinates[0]]);
     }
 
-    this.mapDensityLayer = L.heatLayer(heatData, { radius: 25 }).addTo(this.MAP);
+    this.mapDensityLayer = L.heatLayer(heatData, { radius: 100 }).addTo(this.MAP);
+  }
+
+  private renderParkingsByDensity(data) {
+    for (let i = 0; i < this.mapParkingsByDensityLayer.length; i++) {
+      this.MAP.removeLayer(this.mapParkingsByDensityLayer[i]);
+    }
+
+    this.mapParkingsByDensityLayer = [];
+
+    for (let j = 0; j < data.length; j++) {
+      let feature = data[j];
+      let coordinates = feature.geo.coordinates;
+      let marker = L.marker([coordinates[1], coordinates[0]], { icon: this.marker.parking }).bindTooltip(feature.name).addTo(this.MAP);
+
+      this.mapParkingsByDensityLayer.push(marker);
+    }
   }
 
   private onMapClick(event): void {

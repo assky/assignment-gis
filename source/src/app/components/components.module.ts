@@ -1,16 +1,19 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MapComponent } from './map/map.component';
+import { MapBoxComponent } from './mapbox/mapbox.component';
 
 @NgModule({
   declarations: [
-    MapComponent
+    MapComponent,
+    MapBoxComponent
   ],
   imports: [
     CommonModule
   ],
   exports: [
-    MapComponent
+    MapComponent,
+    MapBoxComponent
   ],
 })
 export class ComponentsModule { }

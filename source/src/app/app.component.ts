@@ -13,6 +13,7 @@ export class AppComponent {
   public features: string[] = [];
   public substances: string[] = [];
   public showDensity: boolean;
+  public showParkingsByDensity: boolean;
 
   public onRadiusChange(event) {
     this.mapRadius = event.value * 1000;
@@ -62,4 +63,9 @@ export class AppComponent {
   public onDensitySelect(event) {
     this.showDensity = event.checked;
   }
+
+  public onParkingsByDensitySelect(event) {
+    this.showParkingsByDensity = event.checked;
+  }
+
 }

@@ -1,94 +1,5 @@
 const postgres = global.postgres;
 
-module.exports.getGeoData = function (req, res) {
-    var request = req.body;
-    var coordinates = null;
-    var radius = 1000;
-    var features = null;
-
-    if (request.filter) {
-        var reqFilter = request.filter;
-
-        if ('coordinates' in reqFilter)
-            coordinates = reqFilter.coordinates;
-
-        if ('radius' in reqFilter)
-            radius = reqFilter.radius;
-
-        if ('features' in reqFilter)
-            features = reqFilter.features;
-    }
-    
-    var query = `SELECT pol.osm_id as id, pol.name, ST_AsGeoJSON(st_transform(pol.way, 4326)) as json FROM planet_osm_polygon as pol WHERE (pol.natural='water' AND pol.water='lake' and pol.name IS NOT NULL)`;
-
-    if (coordinates) 
-        query = `SELECT pol.osm_id as id, pol.name, ST_AsGeoJSON(st_transform(pol.way, 4326)) as json FROM planet_osm_polygon as pol WHERE (pol.natural='water' AND pol.water='lake' and pol.name IS NOT NULL) AND ST_DWithin(ST_Transform(way, 4326), ST_SetSRID(ST_MakePoint(` + coordinates.lng + `, ` + coordinates.lat + `),4326)::geography, ` + radius + `)`;
-
-    if (coordinates && features && features.length > 0) {
-        query = `
-            SELECT tar.osm_id as id, tar.name, ST_AsGeoJSON(st_transform(tar.way, 4326)) as json, com.amenity as feature_type, com.name as feature_name, ST_AsGeoJSON(ST_Transform(ST_Centroid(com.way), 4326)) as feature_json FROM
-                (SELECT * FROM planet_osm_polygon as pol WHERE (pol.natural='water' AND pol.water='lake' and pol.name IS NOT NULL) AND ST_DWithin(ST_Transform(way, 4326), ST_SetSRID(ST_MakePoint(` + coordinates.lng + `, ` + coordinates.lat + `),4326)::geography, ` + radius + `)) as tar
-            CROSS JOIN
-                (
-                    SELECT amenity, name, way FROM planet_osm_polygon WHERE amenity IN (` + features.map(f => "'" + f + "'").join(',') + `)
-                    UNION
-                    SELECT amenity, name, way FROM planet_osm_point WHERE amenity IN (` + features.map(f => "'" + f + "'").join(',') + `)
-                ) as com
-            WHERE ST_DWithin(ST_SetSRID(tar.way, 4326), ST_SetSRID(com.way, 4326), 500)`;
-    }
-
-    // var query = 'SELECT DISTINCT tar.name, ST_AsGeoJSON(st_transform(tar.way, 4326)) as json FROM';
-
-    // if (coordinates && radius)
-    //     query += " (SELECT * FROM planet_osm_polygon as pol WHERE (pol.natural='water' AND pol.water='lake' AND pol.name IS NOT NULL) AND ST_DWithin(ST_Transform(way, 4326), ST_SetSRID(ST_MakePoint(" + coordinates.lng + ", " + coordinates.lat + "),4326)::geography, " + radius + ")) as tar";
-    // else
-    //     query += " (SELECT * FROM planet_osm_polygon as pol WHERE (pol.natural='water' AND pol.water='lake' AND pol.name IS NOT NULL)) as tar";
-
-    // if (features && features.length > 0)
-    //     query += ` CROSS JOIN
-    //                     (SELECT * FROM planet_osm_point WHERE amenity IN (` + features.map(f => "'" + f + "'").join(',') + `)) as com
-    //                 WHERE ST_Intersects(ST_Buffer(tar.way, 1000)::geometry, com.way::geometry)`;
-
-    postgres.query(query, (err, result) => {
-        if (err)
-            return res.status(500).json({ success: false, data: err });
-        
-        var rows = result.rows;
-        var response = { lakes: [] };
-
-        if (coordinates && features && features.length > 0) { 
-            var lakes = {};
-            
-            for (var i = 0; i < rows.length; i++) {
-                var row = rows[i];
-                var name = row['name'];
-
-                if (!(name in lakes))
-                    lakes[name] = { id: row['id'], name: row['name'], geo: JSON.parse(row['json']), features: [] };
-
-                lakes[name].features.push({ name: row['feature_name'], type: row['feature_type'], geo: JSON.parse(row['feature_json']) });
-            }
-
-            response.lakes = Object.values(lakes);
-        }
-        else {
-            for (var i = 0; i < rows.length; i++) {
-                var row = rows[i];
-                var name = row['name'];
-
-                response.lakes.push({ id: row['id'], name: row['name'], geo: JSON.parse(row['json']), features: [] });
-            }
-        }
-
-        // for (var i = 0; i < rows.length; i++) {
-        //     var row = rows[i];
-        //     data.push({ name: row['name'], json: JSON.parse(row['json']) });
-        // }
-
-        res.json({ success: true, data: response });
-    });
-}
-
 module.exports.getLakes = function (req, res) { 
     var request = req.body;
 
@@ -107,10 +18,10 @@ module.exports.getLakes = function (req, res) {
             query += " AND pol.leisure = 'fishing'";
 
         if ('quality' in filter && filter.quality)
-            query += " AND pol.water IS NOT NULL AND pol.water IN ('lake', 'reservoir', 'pool', 'pond')";
+            query += " AND pol.water IS NOT NULL AND pol.water IN ('lake', 'reservoir', 'pool')";
 
         if (!filter.sports && !filter.fishing && !filter.quality)
-            query += " AND pol.water IS NOT NULL AND pol.water IN ('lake', 'pool', 'pond')";
+            query += " AND pol.water IS NOT NULL AND pol.water IN ('lake', 'reservoir', 'pool')";
     }
 
     postgres.query(query, (err, result) => {
@@ -161,7 +72,7 @@ module.exports.getFeatures = function (req, res) {
                 SELECT osm_id, amenity, name, way FROM planet_osm_point WHERE amenity IN (` + features.map(f => "'" + f + "'").join(',') + `)
             ) as com
         WHERE ST_DWithin(ST_SetSRID(tar.way, 4326), ST_SetSRID(com.way, 4326), ` + radius + `)`;
-
+    
     postgres.query(query, (err, result) => {
         if (err)
             return res.status(500).json({ success: false, data: err });
@@ -214,7 +125,34 @@ module.exports.getSubstancesData = function (req, res) {
 }
 
 module.exports.getLakesDensity = function (req, res) { 
-    postgres.query("SELECT ST_AsGeoJSON(st_transform(ST_Centroid(pol.way), 4326)) as geo, ST_Area(st_transform(pol.way, 4326)) as area FROM planet_osm_polygon as pol WHERE pol.natural='water' AND pol.water IS NOT NULL AND pol.water IN ('lake', 'reservoir', 'pool', 'pond')", (err, result) => {
+    postgres.query("SELECT ST_AsGeoJSON(st_transform(ST_Centroid(pol.way), 4326)) as geo, ST_Area(st_transform(pol.way, 4326)) as area FROM planet_osm_polygon as pol WHERE pol.natural='water'", (err, result) => {
+        if (err)
+            return res.status(500).json({ success: false, data: err });
+        
+        var rows = result.rows;
+        var response = [];
+
+        for (var i = 0; i < rows.length; i++) {
+            var row = rows[i];
+            response.push({ area: row['area'], geo: JSON.parse(row['geo']) });
+        }
+
+        res.json({ success: true, data: response });
+    });
+}
+
+module.exports.getFeaturesByWaterDensity = function (req, res) { 
+    var query = `
+    SELECT par.osm_id as id, par.name, ST_AsGeoJSON(ST_Transform(par.way, 4326)) as geo FROM
+        (SELECT * FROM planet_osm_point as poi WHERE poi.amenity='parking') as par
+        CROSS JOIN
+        (SELECT * FROM 
+	        (SELECT ST_MinimumBoundingCircle(unnest(ST_ClusterWithin(pol.way, 10000))) as bounding FROM planet_osm_polygon as pol WHERE pol.natural='water' AND pol.water IN ('lake', 'reservoir', 'pond')) as bou
+         ORDER BY ST_Area(bou.bounding) DESC LIMIT 2
+         ) as reg		
+    WHERE ST_Contains(reg.bounding, par.way)`;
+
+    postgres.query(query, (err, result) => {
         if (err)
             return res.status(500).json({ success: false, data: err });
         

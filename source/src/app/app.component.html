@@ -21,9 +21,6 @@
         <div class="field">
           <mat-checkbox value="fishing" (change)="onOptionSelect($event)">Rybolov</mat-checkbox>
         </div>
-        <div class="field">
-          <mat-checkbox value="quality" (change)="onOptionSelect($event)">Kvalitná voda</mat-checkbox>
-        </div>
         
         <hr>
 
@@ -71,11 +68,12 @@
         <div class="field">
           <mat-checkbox value="Temperature" (change)="onSubstanceSelect($event)">Zobraziť teplotu vody</mat-checkbox>
           <mat-checkbox value="density" (change)="onDensitySelect($event)">Zobraziť hustotu vondých plôch</mat-checkbox>
+          <mat-checkbox value="parkings" (change)="onParkingsByDensitySelect($event)">Zobraziť parkoviská <small>(2 oblasti s najväčšou hustotu vod. plôch)</small></mat-checkbox>
         </div>
 
         <hr>
 
-        <h4>Chemické látky:</h4>
+        <h4>Chemické zloženie:</h4>
         <div class="field">
           <mat-checkbox value="Ca" (change)="onSubstanceSelect($event)">Ca</mat-checkbox>
         </div>
@@ -92,8 +90,10 @@
       </div>
       <div class="map">
 
-        <app-map [radius]="mapRadius" [filter]="filter" [features]="features" [featuresRadius]="mapFeatureRadius" [substances]="substances" [showDensity]="showDensity"></app-map>
+        <app-map [radius]="mapRadius" [filter]="filter" [features]="features" [featuresRadius]="mapFeatureRadius" [substances]="substances" [showDensity]="showDensity" [showParkingsByDensity]="showParkingsByDensity"></app-map>
 
+        <!-- <app-mapbox></app-mapbox> -->
+        
       </div>
   </div>
  

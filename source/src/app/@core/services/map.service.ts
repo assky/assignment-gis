@@ -34,4 +34,8 @@ export class MapService {
   public getLakesDensity(): Observable<any> {
     return this.apiService.request(this.ENDPOINT_URL + 'getLakesDensity', {});
   }
+
+  public getFeaturesByWaterDensity(): Observable<any> {
+    return this.apiService.request(this.ENDPOINT_URL + 'getFeaturesByWaterDensity', {});
+  }
 }
