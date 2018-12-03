@@ -32,6 +32,79 @@ Serverová časť aplikácie je implementovaná v jazyku JavaScript, ktorý je v
 
 Dáta pre aplikáciu pozostávajú z vyexportovaných OSM dát pre celú Slovenskú Republiku. Dáta boli importované do databázy pomocou nástroja `osm2pgsql` s využitím štandardnej schémy. Všetky query pre získavanie dát sa nachádzajú v rámci súboru `map.controller.js`, ktorý zabezpečuje logiku všetkých API volaní.
 
+## Zoznam queries
+
+### Query pre nájdenie vodných plôch (UC 1)
+Query pre nájdenie všetkých vodných plôch s možnosťou filtrovania podľa vzdialenosti v okolí zvoleného bodu, dostupnosti vodných športov a možnosti chytania rýb. Query vráti zoznam polygonov reprezentujúcich jednotlivé jazerá.
+```
+SELECT pol.osm_id as id, pol.name, ST_AsGeoJSON(st_transform(pol.way, 4326)) as geo FROM planet_osm_polygon as pol WHERE pol.natural='water'
+```
+
+Doplnok query pre vyfiltrovanie podľa vzdialenosti od zvoleného bodu
+```
+AND ST_DWithin(ST_Transform(pol.way, 4326), ST_SetSRID(ST_MakePoint(LONGITUDE, LATITUDE),4326)::geography, RADIUS)
+```
+
+Doplnok query pre vyfiltrovanie podľa možnosti vodných športov
+```
+AND pol.sport IS NOT NULL
+```
+
+Doplnok query pre vyfiltrovanie podľa možnosti chytania rýb
+```
+AND pol.leisure = 'fishing'
+```
+
+Doplnok query pre v prípade ak nie je zvolený žiaden filter z vyššie uvedených
+```
+AND pol.water IS NOT NULL AND pol.water IN ('lake', 'reservoir', 'pool')
+```
+
+### Query pre nájdenie záujmových bodov v okolí vodných plôch (UC 2)
+
+Query pre nájdenie všetkých záujmových bodov vv zadanej vzdialenosti od nájdených vodných plôch z predchádzajúcej query. Výsledkome je zoznam bodov (centroidov) nájdených záujmových bodov.
+```
+SELECT com.osm_id as id, com.amenity as type, com.name as name, ST_AsGeoJSON(ST_Transform(ST_Centroid(com.way), 4326)) as geo FROM 
+    (SELECT * FROM planet_osm_polygon as pol WHERE pol.osm_id IN (POLYGON_IDS_ARRAY)) as tar
+    CROSS JOIN
+    (
+        SELECT osm_id, tourism as amenity, name, way FROM planet_osm_polygon WHERE tourism IS NOT NULL AND tourism IN ('parking', 'restaurant', 'pub')
+        UNION
+        SELECT osm_id, amenity, name, way FROM planet_osm_point WHERE amenity IN ('parking', 'restaurant', 'pub')
+    ) as com
+WHERE ST_DWithin(ST_SetSRID(tar.way, 4326), ST_SetSRID(com.way, 4326), RADIUS)
+```
+
+### Query pre získanie nameraných hodnôt meracích staníc (UC 3)
+
+Query pre získanie všetkých nameraných hodnôť pre zvolené chemické látky (alebo teploty) pre niektoré vodné plochy na Slovensku. Query získava dáta z externého datasetu mimo OSM dát.
+```
+SELECT sta.lakename, sta.longitude, sta.latitude, sub.determinand_supportive as substance, sub.mean as value FROM stations as sta 
+JOIN substances as sub ON (sta.nationalstationid = sub.nationalstationid)
+WHERE sta.countrycode = 'SK' AND sub.determinand_supportive IN ('Ca', 'Temperature')
+```
+
+### Query pre získanie centroidov všetkých vodných plôch (Extra UC)
+
+Query pre získanie centroidov všetkých vodných plôch pre vizualizáciu hustoty vodných plôch prostredníctvom heat mapy.
+```
+SELECT ST_AsGeoJSON(st_transform(ST_Centroid(pol.way), 4326)) as geo, ST_Area(st_transform(pol.way, 4326)) as area FROM planet_osm_polygon as pol WHERE pol.natural='water'
+```
+
+### Query pre získanie parkovísk v oblastiach s najväčšou hustotou vodných plôch (Extra UC)
+
+Query pre získanie všetkých parkovísk, ktoré sa nachádzajú v dvoch oblastiach s najväčšou hustotou vodných plôch. Zhlukovaním vodných plôch sú získané hluky ku ktorým sa nájde najmenší boundig box na základe ktorého sú vyfilitrované dve najväčšie oblasti.
+```
+SELECT par.osm_id as id, par.name, ST_AsGeoJSON(ST_Transform(par.way, 4326)) as geo FROM
+    (SELECT * FROM planet_osm_point as poi WHERE poi.amenity='parking') as par
+    CROSS JOIN
+    (SELECT * FROM 
+        (SELECT ST_MinimumBoundingCircle(unnest(ST_ClusterWithin(pol.way, 10000))) as bounding FROM planet_osm_polygon as pol WHERE pol.natural='water' AND pol.water IN ('lake', 'reservoir', 'pond')) as bou
+        ORDER BY ST_Area(bou.bounding) DESC LIMIT 2
+        ) as reg		
+WHERE ST_Contains(reg.bounding, par.way)
+```
+
 ## Optimalizácie
 
 Pre optimalizovanie queries boli vytvorené indexy pre:
